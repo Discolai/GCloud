@@ -43,8 +43,8 @@ namespace GCloud.Models
             rsa.ImportRSAPrivateKey(PrivateKey, out int bytesRead);
             if (bytesRead == 0) throw new Exception("Failed to read private key");
 
-            rsa.ImportRSAPublicKey(PublicKey, out bytesRead);
-            if (bytesRead == 0) throw new Exception("Failed to read private key");
+            //rsa.ImportRSAPublicKey(PublicKey, out bytesRead);
+            //if (bytesRead == 0) throw new Exception("Failed to read private key");
 
             return rsa;
         }

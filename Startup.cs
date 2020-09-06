@@ -47,8 +47,14 @@ namespace GCloud
 
             // Register the IOptions object
             services.Configure<JwtTokenSettings>(Configuration.GetSection("JwtTokenSettings"));
+            services.Configure<RsyncdSettings>(Configuration.GetSection("RsyncSettings"));
+            
             // Explicitly register the settings object by delegating to the IOptions object
             services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<JwtTokenSettings>>().Value);
+            services.AddSingleton(resolver => resolver.GetRequiredService<IOptions<RsyncdSettings>>().Value);
+
+            services.AddScoped(typeof(RsyncdSecretsManager));
+            services.AddScoped(typeof(RsyncdConfManager));
 
             var jwtTokenSettings = Configuration.GetSection("JwtTokenSettings").Get<JwtTokenSettings>();
             services.AddAuthentication(options =>

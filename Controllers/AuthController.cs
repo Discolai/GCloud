@@ -26,19 +26,30 @@ namespace GCloud.Controllers
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly GCloudDbContext _context;
+        private readonly RsyncdSecretsManager _rsyncdSecretsManager;
+        private readonly RsyncdConfManager _rsyncdConfManager;
 
-        public AuthController(JwtTokenSettings jwtTokenSettings, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, GCloudDbContext context)
+        public AuthController(
+            JwtTokenSettings jwtTokenSettings, 
+            SignInManager<IdentityUser> signInManager, 
+            UserManager<IdentityUser> userManager, 
+            GCloudDbContext context, 
+            RsyncdSecretsManager rsyncdSecretsManager,
+            RsyncdConfManager rsyncdConfManager)
         {
             _jwtTokenSettings = jwtTokenSettings;
             _signInManager = signInManager;
             _userManager = userManager;
             _context = context;
+            _rsyncdSecretsManager = rsyncdSecretsManager;
+            _rsyncdConfManager = rsyncdConfManager;
         }
 
-        [HttpGet]
-        public ActionResult<JwtTokenSettings> GetTokenSettings()
+
+        [HttpPost("removemodule/{module}")]
+        public async Task<object> RemoveModuleAsync(string module)
         {
-            return _jwtTokenSettings;
+            return await _rsyncdConfManager.RemoveModuleAsync(module);
         }
 
         [HttpPost("signup")]
@@ -64,6 +75,10 @@ namespace GCloud.Controllers
 
             _context.RsaKeyPairs.Add(keyPair);
             await _context.SaveChangesAsync();
+
+            if (!await _rsyncdSecretsManager.AddUserAsync(user, keyPair)) return StatusCode(500);
+
+            if (!await _rsyncdConfManager.AddModuleAsync(user.UserName)) return StatusCode(500);
 
             return Ok(_jwtTokenSettings.GenToken(user));
         }
