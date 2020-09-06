@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using GCloud.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -11,5 +12,7 @@ namespace GCloud.Data
     public class GCloudDbContext : IdentityDbContext<IdentityUser>
     {
         public GCloudDbContext(DbContextOptions options) : base(options) { }
+
+        public DbSet<RsaKeyPair> RsaKeyPairs { get; set; }
     }
 }

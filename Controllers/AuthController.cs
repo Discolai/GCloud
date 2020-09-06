@@ -1,13 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
+using GCloud.Data;
 using GCloud.Dtos.Auth;
+using GCloud.Models;
 using GCloud.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 namespace GCloud.Controllers
 {
@@ -18,12 +25,14 @@ namespace GCloud.Controllers
         private readonly JwtTokenSettings _jwtTokenSettings;
         private readonly SignInManager<IdentityUser> _signInManager;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly GCloudDbContext _context;
 
-        public AuthController(JwtTokenSettings jwtTokenSettings, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager)
+        public AuthController(JwtTokenSettings jwtTokenSettings, SignInManager<IdentityUser> signInManager, UserManager<IdentityUser> userManager, GCloudDbContext context)
         {
             _jwtTokenSettings = jwtTokenSettings;
             _signInManager = signInManager;
             _userManager = userManager;
+            _context = context;
         }
 
         [HttpGet]
@@ -51,6 +60,11 @@ namespace GCloud.Controllers
                 return ValidationProblem(ModelState);
             }
 
+            var keyPair = new RsaKeyPair(RSA.Create()) { User = user };
+
+            _context.RsaKeyPairs.Add(keyPair);
+            await _context.SaveChangesAsync();
+
             return Ok(_jwtTokenSettings.GenToken(user));
         }
 
@@ -62,6 +76,36 @@ namespace GCloud.Controllers
             if (!result.Succeeded) return Forbid();
             return Ok(_jwtTokenSettings.GenToken(await _userManager.FindByNameAsync(loginDto.UserName)));
 
+        }
+
+        [Authorize]
+        [HttpGet("publickey")]
+        public async Task<ActionResult> GetPublicKeyAsync()
+        {
+            var keyPair = await _context.RsaKeyPairs.SingleOrDefaultAsync(c => c.User.UserName == User.Identity.Name);
+            if (keyPair == null) return NotFound();
+
+            return Ok(keyPair.ExportPemPublicKey());
+        }
+
+        [Authorize]
+        [HttpGet("publicsshkey")]
+        public async Task<ActionResult> GetPublicSSHKeyAsync()
+        {
+            var keyPair = await _context.RsaKeyPairs.SingleOrDefaultAsync(c => c.User.UserName == User.Identity.Name);
+            if (keyPair == null) return NotFound();
+
+            return Ok(keyPair.ExportOpenSSHPublicKey());
+        }
+
+        [Authorize]
+        [HttpGet("privatekey")]
+        public async Task<ActionResult> GetPrivatekeyAsync()
+        {
+            var keyPair = await _context.RsaKeyPairs.SingleOrDefaultAsync(c => c.User.UserName == User.Identity.Name);
+            if (keyPair == null) return NotFound();
+
+            return Ok(keyPair.ExportPemPrivateKey());
         }
 
         private void ParseIdentityErrors(IEnumerable<IdentityError> errors)

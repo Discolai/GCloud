@@ -47,7 +47,6 @@ namespace GCloud.Services
 
                 Expires = DateTime.UtcNow.AddSeconds(TimeSpanSeconds),
                 SigningCredentials = Credentials,
-                //SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(Encoding.ASCII.GetBytes(Key)), SecurityAlgorithms.HmacSha256Signature),
                 Audience = Audience,
                 Issuer = Issuer
             };
