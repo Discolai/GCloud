@@ -28,6 +28,7 @@ namespace GCloud.Controllers
         private readonly GCloudDbContext _context;
         private readonly RsyncdSecretsManager _rsyncdSecretsManager;
         private readonly RsyncdConfManager _rsyncdConfManager;
+        private readonly AuthorizedKeysManager _authorizedKeysManager;
 
         public AuthController(
             JwtTokenSettings jwtTokenSettings, 
@@ -35,7 +36,8 @@ namespace GCloud.Controllers
             UserManager<IdentityUser> userManager, 
             GCloudDbContext context, 
             RsyncdSecretsManager rsyncdSecretsManager,
-            RsyncdConfManager rsyncdConfManager)
+            RsyncdConfManager rsyncdConfManager,
+            AuthorizedKeysManager authorizedKeysManager)
         {
             _jwtTokenSettings = jwtTokenSettings;
             _signInManager = signInManager;
@@ -43,13 +45,7 @@ namespace GCloud.Controllers
             _context = context;
             _rsyncdSecretsManager = rsyncdSecretsManager;
             _rsyncdConfManager = rsyncdConfManager;
-        }
-
-
-        [HttpPost("removemodule/{module}")]
-        public async Task<object> RemoveModuleAsync(string module)
-        {
-            return await _rsyncdConfManager.RemoveModuleAsync(module);
+            _authorizedKeysManager = authorizedKeysManager;
         }
 
         [HttpPost("signup")]
@@ -79,6 +75,8 @@ namespace GCloud.Controllers
             if (!await _rsyncdSecretsManager.AddUserAsync(user, keyPair)) return StatusCode(500);
 
             if (!await _rsyncdConfManager.AddModuleAsync(user.UserName)) return StatusCode(500);
+
+            if (!await _authorizedKeysManager.AddAsync(keyPair.ExportOpenSSHPublicKey())) return StatusCode(500);
 
             return Ok(_jwtTokenSettings.GenToken(user));
         }

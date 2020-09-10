@@ -55,6 +55,7 @@ namespace GCloud
 
             services.AddScoped(typeof(RsyncdSecretsManager));
             services.AddScoped(typeof(RsyncdConfManager));
+            services.AddScoped(typeof(AuthorizedKeysManager));
 
             var jwtTokenSettings = Configuration.GetSection("JwtTokenSettings").Get<JwtTokenSettings>();
             services.AddAuthentication(options =>
